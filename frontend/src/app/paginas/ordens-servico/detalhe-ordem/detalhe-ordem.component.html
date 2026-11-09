@@ -1,0 +1,362 @@
+<a
+  routerLink="/ordens-servico"
+  class="mb-4 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-grafite-500 transition hover:text-marca-600"
+>
+  <i class="fa-solid fa-arrow-left text-[12px]"></i>
+  Voltar para as ordens
+</a>
+
+@if (carregando()) {
+  <div class="cartao p-10 text-center text-[14px] text-grafite-500">Carregando ordem…</div>
+} @else {
+  @if (ordem(); as ordemAtual) {
+  <!-- Cabeçalho da ordem -->
+  <header class="cartao mb-4 p-5">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <div class="flex flex-wrap items-center gap-3">
+          <h1 class="font-mono text-[22px] font-semibold tracking-tight text-grafite-900">
+            {{ ordemAtual.numero }}
+          </h1>
+          <app-status [status]="ordemAtual.status" origem="ordem"></app-status>
+        </div>
+        <p class="mt-1.5 text-[13.5px] text-grafite-500">
+          Aberta em {{ ordemAtual.dataAbertura | date: 'dd/MM/yyyy' }}
+          @if (ordemAtual.dataConclusao) {
+            · concluída em {{ ordemAtual.dataConclusao | date: 'dd/MM/yyyy' }}
+          }
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        @if (!ordemFinalizada()) {
+          <button
+            type="button"
+            class="inline-flex h-9 items-center gap-2 rounded-lg border border-borda bg-white px-3
+                   text-[13.5px] font-medium text-rose-600 transition hover:bg-rose-50"
+            (click)="confirmarCancelamento()"
+          >
+            Cancelar ordem
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-9 items-center gap-2 rounded-lg bg-emerald-600 px-3.5 text-[13.5px]
+                   font-semibold text-white transition hover:bg-emerald-700"
+            (click)="concluirOrdem()"
+          >
+            <i class="fa-solid fa-check text-[12px]"></i>
+            Concluir ordem
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Esteira de acompanhamento -->
+    <ol class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+      @for (etapa of etapas(); track etapa.status; let ultimo = $last) {
+        <li class="flex flex-1 items-center gap-3">
+          <div class="flex items-center gap-2.5">
+            <span
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold transition"
+              [ngClass]="
+                etapa.concluida
+                  ? 'bg-emerald-500 text-white'
+                  : etapa.atual
+                    ? 'bg-marca-500 text-white ring-4 ring-marca-100'
+                    : 'bg-neve text-grafite-400 ring-1 ring-inset ring-borda'
+              "
+            >
+              @if (etapa.concluida) {
+                <i class="fa-solid fa-check text-[11px]"></i>
+              } @else {
+                {{ $index + 1 }}
+              }
+            </span>
+            <span
+              class="whitespace-nowrap text-[13px]"
+              [ngClass]="etapa.atual ? 'font-semibold text-grafite-900' : 'text-grafite-500'"
+            >
+              {{ etapa.rotulo }}
+            </span>
+          </div>
+          @if (!ultimo) {
+            <span
+              class="block h-px flex-1"
+              [ngClass]="etapa.concluida ? 'bg-emerald-300' : 'bg-borda'"
+            ></span>
+          }
+        </li>
+      }
+    </ol>
+  </header>
+
+  <div class="grid gap-4 xl:grid-cols-3">
+    <!-- Itens da ordem -->
+    <section class="cartao overflow-hidden xl:col-span-2">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-borda px-5 py-4">
+        <div>
+          <h2 class="titulo-secao">Serviços e peças</h2>
+          <p class="texto-apoio mt-0.5">O total da ordem é calculado automaticamente.</p>
+        </div>
+        @if (!ordemFinalizada()) {
+          <button
+            type="button"
+            class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+                   font-semibold text-white transition hover:bg-marca-600"
+            (click)="abrirInclusaoItem()"
+          >
+            <i class="fa-solid fa-plus text-[12px]"></i>
+            Adicionar item
+          </button>
+        }
+      </div>
+
+      <p-table [value]="ordemAtual.itens" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="min-width: 220px">Item</th>
+            <th style="min-width: 100px">Tipo</th>
+            <th style="min-width: 80px" class="text-center">Qtd.</th>
+            <th style="min-width: 120px" class="text-right">Valor unit.</th>
+            <th style="min-width: 120px" class="text-right">Total</th>
+            <th style="width: 60px"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td class="text-[13.5px] font-medium text-grafite-900">{{ item.nome }}</td>
+            <td>
+              <span
+                class="rounded-md bg-neve px-2 py-0.5 text-[12px] font-medium text-grafite-600"
+              >
+                {{ descreverTipoItem(item.tipo) }}
+              </span>
+            </td>
+            <td class="text-center text-[13.5px]">{{ item.quantidade }}</td>
+            <td class="text-right text-[13.5px]">{{ item.valorUnitario | currency: 'BRL' }}</td>
+            <td class="text-right text-[13.5px] font-semibold">
+              {{ item.valorTotal | currency: 'BRL' }}
+            </td>
+            <td>
+              @if (!ordemFinalizada()) {
+                <button
+                  type="button"
+                  class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-400 transition hover:bg-rose-50 hover:text-rose-600"
+                  (click)="removerItem(item.id, item.nome)"
+                  pTooltip="Remover item"
+                  tooltipPosition="top"
+                  aria-label="Remover item"
+                >
+                  <i class="fa-solid fa-xmark text-[13px]"></i>
+                </button>
+              }
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6">
+              <app-estado-vazio
+                icone="fa-solid fa-wrench"
+                titulo="Nenhum item lançado"
+                mensagem="Adicione os serviços executados e as peças utilizadas nesta ordem."
+              ></app-estado-vazio>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <!-- Totais -->
+      <div class="border-t border-borda bg-neve/60 px-5 py-4">
+        <dl class="ml-auto max-w-xs space-y-2 text-[13.5px]">
+          <div class="flex justify-between">
+            <dt class="text-grafite-500">Serviços</dt>
+            <dd>{{ ordemAtual.totalServicos | currency: 'BRL' }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-grafite-500">Peças</dt>
+            <dd>{{ ordemAtual.totalPecas | currency: 'BRL' }}</dd>
+          </div>
+          <div class="flex justify-between border-t border-borda pt-2">
+            <dt class="font-semibold text-grafite-900">Total da ordem</dt>
+            <dd class="text-[16px] font-semibold text-grafite-900">
+              {{ ordemAtual.valorTotal | currency: 'BRL' }}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Informações laterais -->
+    <aside class="flex flex-col gap-4">
+      <div class="cartao p-5">
+        <h2 class="titulo-secao mb-3">Cliente e veículo</h2>
+        <dl class="divide-y divide-borda text-[13.5px]">
+          <div class="flex items-start justify-between gap-3 py-2.5">
+            <dt class="text-grafite-500">Cliente</dt>
+            <dd class="text-right font-medium text-grafite-900">{{ ordemAtual.nomeCliente }}</dd>
+          </div>
+          <div class="flex items-start justify-between gap-3 py-2.5">
+            <dt class="text-grafite-500">Telefone</dt>
+            <dd>{{ ordemAtual.telefoneCliente }}</dd>
+          </div>
+          <div class="flex items-start justify-between gap-3 py-2.5">
+            <dt class="text-grafite-500">Veículo</dt>
+            <dd class="text-right">{{ ordemAtual.descricaoVeiculo }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-3 py-2.5">
+            <dt class="text-grafite-500">Placa</dt>
+            <dd><span class="placa-veiculo">{{ ordemAtual.placaVeiculo }}</span></dd>
+          </div>
+        </dl>
+      </div>
+
+      @if (!ordemFinalizada()) {
+        <div class="cartao p-5">
+          <h2 class="titulo-secao mb-1">Andamento</h2>
+          <p class="texto-apoio mb-3">Atualize a situação conforme o serviço avança.</p>
+          <div class="flex flex-col gap-2">
+            @for (opcao of opcoesStatus; track opcao.valor) {
+              <button
+                type="button"
+                class="flex items-center justify-between rounded-lg border px-3 py-2 text-[13.5px] transition"
+                [ngClass]="
+                  ordemAtual.status === opcao.valor
+                    ? 'border-marca-500 bg-marca-50 font-semibold text-marca-700'
+                    : 'border-borda bg-white text-grafite-700 hover:border-marca-300'
+                "
+                (click)="alterarStatus(opcao.valor)"
+              >
+                {{ opcao.rotulo }}
+                @if (ordemAtual.status === opcao.valor) {
+                  <i class="fa-solid fa-check text-[12px]"></i>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      @if (ordemAtual.observacoes) {
+        <div class="cartao p-5">
+          <h2 class="titulo-secao mb-2">Observações</h2>
+          <p class="text-[13.5px] leading-relaxed text-grafite-700">{{ ordemAtual.observacoes }}</p>
+        </div>
+      }
+    </aside>
+  </div>
+
+  <!-- Inclusão de item -->
+  <p-dialog
+    [visible]="itemVisivel()"
+    (visibleChange)="itemVisivel.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: '520px' }"
+    header="Adicionar item à ordem"
+  >
+    <form [formGroup]="formularioItem" class="grid gap-4">
+      <div>
+        <span class="rotulo-campo">Tipo do item</span>
+        <div class="grid grid-cols-2 gap-2">
+          <label
+            class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-[13.5px] transition"
+            [ngClass]="
+              formularioItem.controls.tipo.value === tipoItem.SERVICO
+                ? 'border-marca-500 bg-marca-50 text-marca-700'
+                : 'border-borda text-grafite-700 hover:border-marca-300'
+            "
+          >
+            <p-radioButton formControlName="tipo" [value]="tipoItem.SERVICO"></p-radioButton>
+            Serviço
+          </label>
+          <label
+            class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-[13.5px] transition"
+            [ngClass]="
+              formularioItem.controls.tipo.value === tipoItem.PECA
+                ? 'border-marca-500 bg-marca-50 text-marca-700'
+                : 'border-borda text-grafite-700 hover:border-marca-300'
+            "
+          >
+            <p-radioButton formControlName="tipo" [value]="tipoItem.PECA"></p-radioButton>
+            Peça
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label class="rotulo-campo" for="referenciaItem">Item</label>
+        <p-dropdown
+          inputId="referenciaItem"
+          formControlName="referenciaId"
+          [options]="opcoesItem()"
+          optionLabel="rotulo"
+          optionValue="id"
+          optionDisabled="indisponivel"
+          placeholder="Selecione o item"
+          [filter]="true"
+          filterBy="rotulo"
+          styleClass="w-full"
+          appendTo="body"
+        >
+          <ng-template let-opcao pTemplate="item">
+            <div class="flex w-full items-center justify-between gap-3">
+              <div>
+                <p class="text-[13.5px]">{{ opcao.rotulo }}</p>
+                <p class="text-[12px] text-grafite-500">{{ opcao.detalhe }}</p>
+              </div>
+              <span class="text-[13px] font-semibold">{{ opcao.valor | currency: 'BRL' }}</span>
+            </div>
+          </ng-template>
+        </p-dropdown>
+        <p class="mt-1.5 text-[12.5px] text-grafite-500">
+          Peças sem saldo em estoque e serviços inativos ficam bloqueados para seleção.
+        </p>
+      </div>
+
+      <div>
+        <label class="rotulo-campo" for="quantidadeItem">Quantidade</label>
+        <input
+          id="quantidadeItem"
+          type="number"
+          min="1"
+          formControlName="quantidade"
+          class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+                 focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        />
+      </div>
+
+      <div class="flex items-center justify-between rounded-lg bg-neve px-3 py-2.5">
+        <span class="text-[13px] text-grafite-500">Valor do item</span>
+        <span class="text-[15px] font-semibold text-grafite-900">
+          {{ calcularPreviaItem() | currency: 'BRL' }}
+        </span>
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <button
+        type="button"
+        class="h-9 rounded-lg px-3.5 text-[13.5px] font-medium text-grafite-500 transition hover:bg-neve"
+        (click)="itemVisivel.set(false)"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-4 text-[13.5px]
+               font-semibold text-white transition hover:bg-marca-600 disabled:opacity-60"
+        (click)="adicionarItem()"
+        [disabled]="salvandoItem()"
+      >
+        @if (salvandoItem()) {
+          <i class="fa-solid fa-spin fa-spinner text-[13px]"></i>
+        }
+        Adicionar item
+      </button>
+    </ng-template>
+  </p-dialog>
+}
+}

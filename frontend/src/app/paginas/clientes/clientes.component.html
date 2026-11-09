@@ -1,0 +1,289 @@
+<app-header-page
+  titulo="Clientes"
+  descricao="Cadastro e histórico dos clientes atendidos pela oficina."
+>
+  <button
+    type="button"
+    class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+           font-semibold text-white transition hover:bg-marca-600"
+    (click)="abrirCadastro()"
+  >
+    <i class="fa-solid fa-plus text-[12px]"></i>
+    Novo cliente
+  </button>
+</app-header-page>
+
+<div class="cartao overflow-hidden">
+  <p-table
+    #tabelaClientes
+    [value]="clientes()"
+    [loading]="carregando()"
+    [paginator]="clientes().length > 10"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [globalFilterFields]="['nome', 'email', 'telefone', 'cidade']"
+    styleClass="p-datatable-sm"
+    currentPageReportTemplate="{first}–{last} de {totalRecords} clientes"
+    [showCurrentPageReport]="true"
+  >
+    <ng-template pTemplate="caption">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="relative w-full sm:max-w-xs">
+          <i
+            class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-grafite-400"
+          ></i>
+          <input
+            type="search"
+            (input)="filtrarTabela(tabelaClientes, $event)"
+            placeholder="Buscar por nome, e-mail ou telefone"
+            class="h-9 w-full rounded-lg border border-borda bg-white pl-9 pr-3 text-[13.5px] outline-none
+                   transition focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+            aria-label="Buscar clientes"
+          />
+        </div>
+        <span class="text-[13px] text-grafite-500">{{ clientes().length }} cliente(s) cadastrado(s)</span>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="nome" style="min-width: 200px">Cliente <p-sortIcon field="nome"></p-sortIcon></th>
+        <th style="min-width: 140px">Telefone</th>
+        <th style="min-width: 200px">E-mail</th>
+        <th style="min-width: 160px">Cidade</th>
+        <th pSortableColumn="criadoEm" style="min-width: 120px">
+          Cadastro <p-sortIcon field="criadoEm"></p-sortIcon>
+        </th>
+        <th style="width: 130px" class="text-right">Ações</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-cliente>
+      <tr>
+        <td>
+          <div class="flex items-center gap-2.5">
+            <span
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-marca-50
+                     text-[12px] font-semibold text-marca-700"
+            >
+              {{ cliente.nome.charAt(0) }}
+            </span>
+            <span class="text-[13.5px] font-medium text-grafite-900">{{ cliente.nome }}</span>
+          </div>
+        </td>
+        <td class="text-[13.5px]">{{ cliente.telefone }}</td>
+        <td class="text-[13.5px] text-grafite-500">{{ cliente.email }}</td>
+        <td class="text-[13.5px]">{{ cliente.cidade || '—' }}</td>
+        <td class="text-[13.5px] text-grafite-500">{{ cliente.criadoEm | date: 'dd/MM/yyyy' }}</td>
+        <td>
+          <div class="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-neve hover:text-marca-600"
+              (click)="visualizarCliente(cliente)"
+              pTooltip="Visualizar"
+              tooltipPosition="top"
+              aria-label="Visualizar cliente"
+            >
+              <i class="fa-solid fa-eye text-[14px]"></i>
+            </button>
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-neve hover:text-marca-600"
+              (click)="abrirEdicao(cliente)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+              aria-label="Editar cliente"
+            >
+              <i class="fa-solid fa-pen text-[14px]"></i>
+            </button>
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-rose-50 hover:text-rose-600"
+              (click)="confirmarExclusao(cliente)"
+              pTooltip="Excluir"
+              tooltipPosition="top"
+              aria-label="Excluir cliente"
+            >
+              <i class="fa-solid fa-trash text-[14px]"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6">
+          <app-estado-vazio
+            icone="fa-solid fa-users"
+            titulo="Nenhum cliente encontrado"
+            mensagem="Cadastre o primeiro cliente para começar a abrir ordens de serviço."
+          >
+            <button
+              type="button"
+              class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px] font-semibold text-white transition hover:bg-marca-600"
+              (click)="abrirCadastro()"
+            >
+              <i class="fa-solid fa-plus text-[12px]"></i>
+              Cadastrar cliente
+            </button>
+          </app-estado-vazio>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Formulário de cadastro / edição -->
+<p-dialog
+  [visible]="formularioVisivel()"
+  (visibleChange)="formularioVisivel.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: '540px' }"
+  [header]="clienteEmEdicao() ? 'Editar cliente' : 'Novo cliente'"
+>
+  <form [formGroup]="formulario" class="grid gap-4 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="nome">Nome completo</label>
+      <input
+        id="nome"
+        type="text"
+        formControlName="nome"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('nome')"
+        placeholder="Ex.: Maria Oliveira"
+      />
+      @if (campoInvalido('nome')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Informe um nome com pelo menos 3 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="telefone">Telefone</label>
+      <input
+        id="telefone"
+        type="tel"
+        formControlName="telefone"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('telefone')"
+        placeholder="(00) 00000-0000"
+      />
+      @if (campoInvalido('telefone')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Informe o telefone de contato.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="emailCliente">E-mail</label>
+      <input
+        id="emailCliente"
+        type="email"
+        formControlName="email"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('email')"
+        placeholder="cliente@email.com"
+      />
+      @if (campoInvalido('email')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Informe um e-mail válido.</p>
+      }
+    </div>
+
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="endereco">Endereço</label>
+      <input
+        id="endereco"
+        type="text"
+        formControlName="endereco"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('endereco')"
+        placeholder="Rua, número e bairro"
+      />
+      @if (campoInvalido('endereco')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Informe o endereço do cliente.</p>
+      }
+    </div>
+
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="cidade">Cidade</label>
+      <input
+        id="cidade"
+        type="text"
+        formControlName="cidade"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        placeholder="Cidade - UF"
+      />
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button
+      type="button"
+      class="h-9 rounded-lg px-3.5 text-[13.5px] font-medium text-grafite-500 transition hover:bg-neve"
+      (click)="formularioVisivel.set(false)"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-4 text-[13.5px]
+             font-semibold text-white transition hover:bg-marca-600 disabled:opacity-60"
+      (click)="salvarCliente()"
+      [disabled]="salvando()"
+    >
+      @if (salvando()) {
+        <i class="fa-solid fa-spin fa-spinner text-[13px]"></i>
+      }
+      Salvar cliente
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- Detalhes do cliente -->
+<p-dialog
+  [visible]="detalheVisivel()"
+  (visibleChange)="detalheVisivel.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: '460px' }"
+  header="Dados do cliente"
+>
+  @if (clienteVisualizado(); as cliente) {
+    <dl class="divide-y divide-borda text-[14px]">
+      <div class="flex justify-between gap-4 py-2.5">
+        <dt class="text-grafite-500">Código</dt>
+        <dd class="codigo-registro">#{{ cliente.id }}</dd>
+      </div>
+      <div class="flex justify-between gap-4 py-2.5">
+        <dt class="text-grafite-500">Nome</dt>
+        <dd class="font-medium text-grafite-900">{{ cliente.nome }}</dd>
+      </div>
+      <div class="flex justify-between gap-4 py-2.5">
+        <dt class="text-grafite-500">Telefone</dt>
+        <dd>{{ cliente.telefone }}</dd>
+      </div>
+      <div class="flex justify-between gap-4 py-2.5">
+        <dt class="text-grafite-500">E-mail</dt>
+        <dd class="text-right">{{ cliente.email }}</dd>
+      </div>
+      <div class="flex justify-between gap-4 py-2.5">
+        <dt class="text-grafite-500">Endereço</dt>
+        <dd class="text-right">{{ cliente.endereco }}</dd>
+      </div>
+      <div class="flex justify-between gap-4 py-2.5">
+        <dt class="text-grafite-500">Cidade</dt>
+        <dd>{{ cliente.cidade || '—' }}</dd>
+      </div>
+      <div class="flex justify-between gap-4 py-2.5">
+        <dt class="text-grafite-500">Cliente desde</dt>
+        <dd>{{ cliente.criadoEm | date: 'dd/MM/yyyy' }}</dd>
+      </div>
+    </dl>
+  }
+</p-dialog>

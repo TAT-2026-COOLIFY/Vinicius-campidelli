@@ -1,0 +1,267 @@
+<app-header-page
+  titulo="Financeiro"
+  descricao="Entradas, saídas e resultado das ordens de serviço."
+>
+  <button
+    type="button"
+    class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+           font-semibold text-white transition hover:bg-marca-600"
+    (click)="abrirLancamento()"
+  >
+    <i class="fa-solid fa-plus text-[12px]"></i>
+    Novo lançamento
+  </button>
+</app-header-page>
+
+@if (resumo(); as totais) {
+  <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <app-card-dashboard
+      titulo="Entradas"
+      [valor]="totais.totalEntradas | currency: 'BRL'"
+      icone="fa-solid fa-arrow-down"
+      cor="sucesso"
+      complemento="Recebimentos no período"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Saídas"
+      [valor]="totais.totalSaidas | currency: 'BRL'"
+      icone="fa-solid fa-arrow-up"
+      cor="erro"
+      complemento="Custos e despesas"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Saldo"
+      [valor]="totais.saldo | currency: 'BRL'"
+      icone="fa-solid fa-wallet"
+      [cor]="totais.saldo >= 0 ? 'marca' : 'erro'"
+      complemento="Entradas − saídas"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Serviços concluídos"
+      [valor]="totais.totalServicosConcluidos.toString()"
+      icone="fa-solid fa-circle-check"
+      cor="neutro"
+      [complemento]="'Ticket médio de ' + (totais.ticketMedio | currency: 'BRL')"
+    ></app-card-dashboard>
+  </section>
+}
+
+<section class="mt-5 cartao p-5">
+  <h2 class="titulo-secao">Entradas e saídas por dia</h2>
+  <p class="texto-apoio mb-4 mt-0.5">Comparativo diário das movimentações registradas.</p>
+  <div class="h-[280px]">
+    <p-chart type="bar" [data]="dadosGrafico()" [options]="opcoesGrafico"></p-chart>
+  </div>
+</section>
+
+<section class="mt-5 cartao overflow-hidden">
+  <div class="border-b border-borda px-5 py-4">
+    <h2 class="titulo-secao">Movimentações</h2>
+    <p class="texto-apoio mt-0.5">Histórico completo de lançamentos do autocenter.</p>
+  </div>
+
+  <p-table
+    #tabelaMovimentacoes
+    [value]="movimentacoes()"
+    [loading]="carregando()"
+    [paginator]="movimentacoes().length > 10"
+    [rows]="10"
+    [globalFilterFields]="['descricao', 'categoria']"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="caption">
+      <div class="relative w-full sm:max-w-xs">
+        <i
+          class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-grafite-400"
+        ></i>
+        <input
+          type="search"
+          (input)="filtrarTabela(tabelaMovimentacoes, $event)"
+          placeholder="Buscar por descrição ou categoria"
+          class="h-9 w-full rounded-lg border border-borda bg-white pl-9 pr-3 text-[13.5px] outline-none
+                 transition focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+          aria-label="Buscar movimentações"
+        />
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="min-width: 110px">Data</th>
+        <th style="min-width: 240px">Descrição</th>
+        <th style="min-width: 130px">Tipo</th>
+        <th style="min-width: 150px">Pagamento</th>
+        <th style="min-width: 130px" class="text-right">Valor</th>
+        <th style="width: 60px"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-movimentacao>
+      <tr>
+        <td class="text-[13.5px] text-grafite-500">{{ movimentacao.data | date: 'dd/MM/yyyy' }}</td>
+        <td>
+          <p class="text-[13.5px] font-medium text-grafite-900">{{ movimentacao.descricao }}</p>
+          <p class="text-[12px] text-grafite-500">{{ movimentacao.categoria }}</p>
+        </td>
+        <td>
+          <app-status [status]="movimentacao.tipo" origem="movimentacao"></app-status>
+        </td>
+        <td class="text-[13.5px] text-grafite-500">
+          {{ descreverFormaPagamento(movimentacao.formaPagamento) }}
+        </td>
+        <td
+          class="text-right text-[13.5px] font-semibold"
+          [ngClass]="movimentacao.tipo === 'ENTRADA' ? 'text-emerald-600' : 'text-rose-600'"
+        >
+          {{ movimentacao.tipo === 'ENTRADA' ? '+' : '−' }}
+          {{ movimentacao.valor | currency: 'BRL' }}
+        </td>
+        <td>
+          <div class="flex justify-end">
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-400 transition hover:bg-rose-50 hover:text-rose-600"
+              (click)="confirmarExclusao(movimentacao)"
+              pTooltip="Excluir lançamento"
+              tooltipPosition="top"
+              aria-label="Excluir lançamento"
+            >
+              <i class="fa-solid fa-trash text-[13px]"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6">
+          <app-estado-vazio
+            icone="fa-solid fa-chart-line"
+            titulo="Sem movimentações"
+            mensagem="Conclua uma ordem de serviço ou registre um lançamento manual."
+          ></app-estado-vazio>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</section>
+
+<!-- Lançamento manual -->
+<p-dialog
+  [visible]="formularioVisivel()"
+  (visibleChange)="formularioVisivel.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: '540px' }"
+  header="Novo lançamento"
+>
+  <form [formGroup]="formulario" class="grid gap-4 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="descricaoMovimentacao">Descrição</label>
+      <input
+        id="descricaoMovimentacao"
+        type="text"
+        formControlName="descricao"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('descricao')"
+        placeholder="Ex.: Compra de filtros"
+      />
+      @if (campoInvalido('descricao')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Descreva o lançamento.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="tipoMovimentacao">Tipo</label>
+      <p-dropdown
+        inputId="tipoMovimentacao"
+        formControlName="tipo"
+        [options]="opcoesTipo"
+        optionLabel="rotulo"
+        optionValue="valor"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-dropdown>
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="categoriaMovimentacao">Categoria</label>
+      <input
+        id="categoriaMovimentacao"
+        type="text"
+        formControlName="categoria"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('categoria')"
+        placeholder="Ex.: Estoque, Folha, Balcão"
+      />
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="formaPagamentoMovimentacao">Forma de pagamento</label>
+      <p-dropdown
+        inputId="formaPagamentoMovimentacao"
+        formControlName="formaPagamento"
+        [options]="opcoesFormaPagamento"
+        optionLabel="rotulo"
+        optionValue="valor"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-dropdown>
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="valorMovimentacao">Valor (R$)</label>
+      <input
+        id="valorMovimentacao"
+        type="number"
+        step="0.01"
+        formControlName="valor"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('valor')"
+      />
+      @if (campoInvalido('valor')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">O valor deve ser maior que zero.</p>
+      }
+    </div>
+
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="dataMovimentacao">Data</label>
+      <input
+        id="dataMovimentacao"
+        type="date"
+        formControlName="data"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+      />
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button
+      type="button"
+      class="h-9 rounded-lg px-3.5 text-[13.5px] font-medium text-grafite-500 transition hover:bg-neve"
+      (click)="formularioVisivel.set(false)"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-4 text-[13.5px]
+             font-semibold text-white transition hover:bg-marca-600 disabled:opacity-60"
+      (click)="registrarMovimentacao()"
+      [disabled]="salvando()"
+    >
+      @if (salvando()) {
+        <i class="fa-solid fa-spin fa-spinner text-[13px]"></i>
+      }
+      Registrar lançamento
+    </button>
+  </ng-template>
+</p-dialog>

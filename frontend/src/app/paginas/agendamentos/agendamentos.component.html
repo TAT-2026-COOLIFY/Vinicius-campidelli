@@ -1,0 +1,276 @@
+<app-header-page
+  titulo="Agendamentos"
+  descricao="Reserve horários de atendimento e acompanhe a agenda da oficina."
+>
+  <button
+    type="button"
+    class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+           font-semibold text-white transition hover:bg-marca-600"
+    (click)="abrirAgendamento()"
+  >
+    <i class="fa-solid fa-calendar-plus text-[12px]"></i>
+    Agendar serviço
+  </button>
+</app-header-page>
+
+<div class="grid gap-4 xl:grid-cols-3">
+  <!-- Grade de horários do dia -->
+  <section class="cartao p-5">
+    <div class="mb-4">
+      <h2 class="titulo-secao">Grade do dia</h2>
+      <p class="texto-apoio mt-0.5">Horários livres e ocupados na data escolhida.</p>
+    </div>
+
+    <label class="rotulo-campo" for="dataGrade">Data</label>
+    <input
+      id="dataGrade"
+      type="date"
+      [value]="dataSelecionada()"
+      (change)="alterarDataSelecionada($event)"
+      class="mb-4 h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+             focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+    />
+
+    <ul class="grid grid-cols-2 gap-2">
+      @for (horario of gradeHorarios; track horario) {
+        <li>
+          @if (agendamentoNoHorario(horario); as agendamento) {
+            <div class="rounded-lg border border-marca-100 bg-marca-50 px-2.5 py-2">
+              <p class="font-mono text-[12px] font-semibold text-marca-700">{{ horario }}</p>
+              <p class="mt-0.5 truncate text-[12px] text-grafite-700">{{ agendamento.nomeCliente }}</p>
+            </div>
+          } @else {
+            <div class="rounded-lg border border-dashed border-borda px-2.5 py-2">
+              <p class="font-mono text-[12px] font-semibold text-grafite-400">{{ horario }}</p>
+              <p class="mt-0.5 text-[12px] text-grafite-400">Livre</p>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+
+  <!-- Lista de agendamentos -->
+  <section class="cartao overflow-hidden xl:col-span-2">
+    <div class="border-b border-borda px-5 py-4">
+      <h2 class="titulo-secao">Próximos atendimentos</h2>
+      <p class="texto-apoio mt-0.5">Agenda completa, ordenada por data e horário.</p>
+    </div>
+
+    <p-table
+      [value]="agendamentos()"
+      [loading]="carregando()"
+      [paginator]="agendamentos().length > 8"
+      [rows]="8"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="min-width: 130px">Data / hora</th>
+          <th style="min-width: 180px">Cliente</th>
+          <th style="min-width: 200px">Veículo e serviço</th>
+          <th style="min-width: 130px">Situação</th>
+          <th style="width: 70px" class="text-right">Ações</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-agendamento>
+        <tr>
+          <td>
+            <p class="text-[13.5px] font-medium text-grafite-900">
+              {{ agendamento.data | date: 'dd/MM/yyyy' }}
+            </p>
+            <p class="font-mono text-[12px] text-marca-600">{{ agendamento.horario }}</p>
+          </td>
+          <td class="text-[13.5px]">{{ agendamento.nomeCliente }}</td>
+          <td>
+            <p class="text-[13.5px] text-grafite-900">{{ agendamento.descricaoServico }}</p>
+            <p class="text-[12px] text-grafite-500">{{ agendamento.descricaoVeiculo }}</p>
+            <p class="mt-0.5 text-[12px] font-medium text-grafite-700">
+              {{ agendamento.valorServico | currency: 'BRL' }}
+            </p>
+          </td>
+          <td>
+            @if (agendamento.situacao === 'CANCELADO' || agendamento.situacao === 'CONCLUIDO') {
+              <app-status [status]="agendamento.situacao" origem="agendamento"></app-status>
+            } @else {
+              <p-dropdown
+                [options]="opcoesSituacao"
+                optionLabel="rotulo"
+                optionValue="valor"
+                [ngModel]="agendamento.situacao"
+                (onChange)="alterarSituacao(agendamento, $event.value)"
+                styleClass="w-full"
+                appendTo="body"
+              ></p-dropdown>
+            }
+          </td>
+          <td>
+            <div class="flex justify-end">
+              @if (agendamento.situacao !== 'CANCELADO' && agendamento.situacao !== 'CONCLUIDO') {
+                <button
+                  type="button"
+                  class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-rose-50 hover:text-rose-600"
+                  (click)="confirmarCancelamento(agendamento)"
+                  pTooltip="Cancelar"
+                  tooltipPosition="top"
+                  aria-label="Cancelar agendamento"
+                >
+                  <i class="fa-solid fa-xmark text-[14px]"></i>
+                </button>
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5">
+            <app-estado-vazio
+              icone="fa-solid fa-calendar"
+              titulo="Agenda vazia"
+              mensagem="Nenhum serviço agendado até o momento."
+            ></app-estado-vazio>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </section>
+</div>
+
+<!-- Formulário de agendamento -->
+<p-dialog
+  [visible]="formularioVisivel()"
+  (visibleChange)="formularioVisivel.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: '560px' }"
+  header="Agendar serviço"
+>
+  <form [formGroup]="formulario" class="grid gap-4 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="clienteAgendamento">Cliente</label>
+      <p-dropdown
+        inputId="clienteAgendamento"
+        formControlName="clienteId"
+        [options]="clientes()"
+        optionLabel="nome"
+        optionValue="id"
+        placeholder="Selecione o cliente"
+        [filter]="true"
+        filterBy="nome"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-dropdown>
+      @if (campoInvalido('clienteId')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Selecione o cliente.</p>
+      }
+    </div>
+
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="veiculoAgendamento">Veículo</label>
+      <p-dropdown
+        inputId="veiculoAgendamento"
+        formControlName="veiculoId"
+        [options]="veiculosDoCliente()"
+        optionLabel="placa"
+        optionValue="id"
+        placeholder="Selecione o veículo do cliente"
+        styleClass="w-full"
+        appendTo="body"
+        [emptyMessage]="'Selecione um cliente com veículo cadastrado'"
+      >
+        <ng-template let-veiculo pTemplate="item">
+          <div class="flex items-center gap-2">
+            <span class="placa-veiculo">{{ veiculo.placa }}</span>
+            <span class="text-[13px]">{{ veiculo.marca }} {{ veiculo.modelo }}</span>
+          </div>
+        </ng-template>
+      </p-dropdown>
+      @if (campoInvalido('veiculoId')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Selecione o veículo que será atendido.</p>
+      }
+    </div>
+
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="servicoAgendamento">Serviço</label>
+      <p-dropdown
+        inputId="servicoAgendamento"
+        formControlName="servicoId"
+        [options]="servicos()"
+        optionLabel="descricao"
+        optionValue="id"
+        placeholder="Selecione o serviço"
+        [filter]="true"
+        filterBy="descricao"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-dropdown>
+      @if (campoInvalido('servicoId')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Selecione o serviço a ser executado.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="dataAgendamento">Data</label>
+      <input
+        id="dataAgendamento"
+        type="date"
+        formControlName="data"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+      />
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="horarioAgendamento">Horário</label>
+      <p-dropdown
+        inputId="horarioAgendamento"
+        formControlName="horario"
+        [options]="horariosLivres()"
+        placeholder="Horários livres"
+        styleClass="w-full"
+        appendTo="body"
+        emptyMessage="Nenhum horário livre nesta data"
+      ></p-dropdown>
+      @if (campoInvalido('horario')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Escolha um horário disponível.</p>
+      }
+    </div>
+
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="observacaoAgendamento">Observação</label>
+      <textarea
+        id="observacaoAgendamento"
+        formControlName="observacao"
+        rows="3"
+        class="w-full rounded-lg border border-borda px-3 py-2 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        placeholder="Relato do cliente, prioridade, retorno de garantia…"
+      ></textarea>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button
+      type="button"
+      class="h-9 rounded-lg px-3.5 text-[13.5px] font-medium text-grafite-500 transition hover:bg-neve"
+      (click)="formularioVisivel.set(false)"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-4 text-[13.5px]
+             font-semibold text-white transition hover:bg-marca-600 disabled:opacity-60"
+      (click)="confirmarAgendamento()"
+      [disabled]="salvando()"
+    >
+      @if (salvando()) {
+        <i class="fa-solid fa-spin fa-spinner text-[13px]"></i>
+      }
+      Confirmar agendamento
+    </button>
+  </ng-template>
+</p-dialog>

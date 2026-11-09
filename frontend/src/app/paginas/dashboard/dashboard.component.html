@@ -1,0 +1,208 @@
+<app-header-page
+  titulo="Dashboard"
+  descricao="Visão geral da operação do autocenter hoje."
+>
+  <button
+    type="button"
+    class="inline-flex h-9 items-center gap-2 rounded-lg border border-borda bg-white px-3
+           text-[13.5px] font-medium text-grafite-700 transition hover:bg-neve"
+    (click)="carregarVisaoGeral()"
+  >
+    <i class="fa-solid fa-arrows-rotate text-[13px]"></i>
+    Atualizar
+  </button>
+  <a
+    routerLink="/ordens-servico"
+    class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+           font-semibold text-white transition hover:bg-marca-600"
+  >
+    <i class="fa-solid fa-plus text-[12px]"></i>
+    Nova ordem
+  </a>
+</app-header-page>
+
+@if (carregando()) {
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+      <p-skeleton height="104px" borderRadius="12px"></p-skeleton>
+    }
+  </div>
+} @else {
+  @if (visaoGeral(); as painel) {
+  <!-- Indicadores -->
+  <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <app-card-dashboard
+      titulo="Clientes cadastrados"
+      [valor]="painel.indicadores.clientesCadastrados.toString()"
+      icone="fa-solid fa-users"
+      complemento="Base ativa da oficina"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Veículos cadastrados"
+      [valor]="painel.indicadores.veiculosCadastrados.toString()"
+      icone="fa-solid fa-car"
+      complemento="Frota atendida"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Ordens em andamento"
+      [valor]="painel.indicadores.ordensEmAndamento.toString()"
+      icone="fa-solid fa-wrench"
+      cor="atencao"
+      complemento="Aguardando conclusão no pátio"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Ordens concluídas"
+      [valor]="painel.indicadores.ordensConcluidas.toString()"
+      icone="fa-solid fa-circle-check"
+      cor="sucesso"
+      complemento="Entregues aos clientes"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Serviços agendados"
+      [valor]="painel.indicadores.servicosAgendados.toString()"
+      icone="fa-solid fa-calendar"
+      cor="neutro"
+      complemento="Agenda dos próximos dias"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Valor movimentado"
+      [valor]="painel.indicadores.valorMovimentado | currency: 'BRL'"
+      icone="fa-solid fa-dollar-sign"
+      cor="sucesso"
+      complemento="Total de entradas registradas"
+    ></app-card-dashboard>
+  </section>
+
+  <!-- graficos -->
+  <section class="mt-5 grid gap-4 xl:grid-cols-3">
+    <div class="cartao p-5 xl:col-span-2">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="titulo-secao">Movimentação financeira</h2>
+          <p class="texto-apoio mt-0.5">Entradas e saídas registradas por dia.</p>
+        </div>
+      </div>
+      <div class="h-[260px]">
+        <p-chart type="line" [data]="dadosFaturamento()" [options]="opcoesLinha"></p-chart>
+      </div>
+    </div>
+
+    <div class="cartao p-5">
+      <h2 class="titulo-secao">Ordens por status</h2>
+      <p class="texto-apoio mb-4 mt-0.5">Distribuição atual da carteira.</p>
+      <div class="h-[260px] ">
+        <p-chart class="gap-3" type="bar" [data]="dadosOrdensPorStatus()" [options]="opcoesBarra"></p-chart>
+      </div>
+    </div>
+  </section>
+
+  <!-- Listas de apoio -->
+  <section class="mt-5 grid gap-4 xl:grid-cols-3">
+    <div class="cartao xl:col-span-2">
+      <div class="flex items-center justify-between border-b border-borda px-5 py-4">
+        <h2 class="titulo-secao">Últimas ordens de serviço</h2>
+        <a routerLink="/ordens-servico" class="text-[13px] font-medium text-marca-600 hover:text-marca-700">
+          Ver todas
+        </a>
+      </div>
+      <p-table [value]="painel.ultimasOrdens" styleClass="p-datatable-sm" [scrollable]="true">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Ordem</th>
+            <th>Cliente</th>
+            <th>Veículo</th>
+            <th>Status</th>
+            <th class="text-right">Valor</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-ordem>
+          <tr>
+            <td>
+              <a
+                [routerLink]="['/ordens-servico', ordem.id]"
+                class="codigo-registro hover:text-marca-600"
+              >
+                {{ ordem.numero }}
+              </a>
+              <p class="text-[12px] text-grafite-500">{{ ordem.dataAbertura | date: 'dd/MM/yyyy' }}</p>
+            </td>
+            <td class="text-[13.5px]">{{ ordem.nomeCliente }}</td>
+            <td>
+              <p class="text-[13.5px]">{{ ordem.descricaoVeiculo }}</p>
+              <span class="placa-veiculo mt-1 inline-block">{{ ordem.placaVeiculo }}</span>
+            </td>
+            <td><app-status [status]="ordem.status" origem="ordem"></app-status></td>
+            <td class="text-right text-[13.5px] font-semibold">
+              {{ ordem.valorTotal | currency: 'BRL' }}
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <!-- Estoque crítico -->
+      <div class="cartao p-5">
+        <div class="flex items-center gap-2">
+          <span class="flex h-7 w-7 items-center justify-center rounded-md bg-rose-50 text-rose-600">
+            <i class="fa-solid fa-triangle-exclamation text-[13px]"></i>
+          </span>
+          <h2 class="titulo-secao">Estoque baixo</h2>
+        </div>
+        @if (painel.pecasEstoqueBaixo.length) {
+          <ul class="mt-3 divide-y divide-borda">
+            @for (peca of painel.pecasEstoqueBaixo; track peca.id) {
+              <li class="flex items-center justify-between gap-3 py-2.5">
+                <div class="min-w-0">
+                  <p class="truncate text-[13.5px] font-medium text-grafite-900">{{ peca.nome }}</p>
+                  <p class="text-[12px] text-grafite-500">mínimo de {{ peca.quantidadeMinima }} un.</p>
+                </div>
+                <span class="shrink-0 rounded-md bg-rose-50 px-2 py-1 text-[12px] font-semibold text-rose-600">
+                  {{ peca.quantidade }} un.
+                </span>
+              </li>
+            }
+          </ul>
+          <a
+            routerLink="/estoque"
+            class="mt-3 inline-flex text-[13px] font-medium text-marca-600 hover:text-marca-700"
+          >
+            Repor estoque
+          </a>
+        } @else {
+          <p class="mt-3 text-[13px] text-grafite-500">Todas as peças estão acima do mínimo.</p>
+        }
+      </div>
+
+      <!-- Serviços mais executados -->
+      <div class="cartao p-5">
+        <div class="flex items-center gap-2">
+          <span class="flex h-7 w-7 items-center justify-center rounded-md bg-marca-50 text-marca-600">
+            <i class="fa-solid fa-ranking-star text-[13px]"></i>
+          </span>
+          <h2 class="titulo-secao">Serviços mais executados</h2>
+        </div>
+        @if (painel.servicosMaisExecutados.length) {
+          <ul class="mt-3 divide-y divide-borda">
+            @for (servico of painel.servicosMaisExecutados; track servico.servicoId) {
+              <li class="flex items-center justify-between gap-3 py-2.5">
+                <p class="truncate text-[13.5px] font-medium text-grafite-900">{{ servico.descricao }}</p>
+                <span class="shrink-0 rounded-md bg-marca-50 px-2 py-1 text-[12px] font-semibold text-marca-600">
+                  {{ servico.quantidade }}x
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="mt-3 text-[13px] text-grafite-500">Nenhum serviço lançado em ordens ainda.</p>
+        }
+      </div>
+    </div>
+  </section>
+}
+}

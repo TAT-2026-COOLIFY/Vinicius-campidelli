@@ -1,0 +1,21 @@
+<article
+  class="cartao p-5 transition duration-200 hover:-translate-y-0.5 hover:border-sky-500 animate-surgir"
+>
+  <div class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <p class="text-[13px] font-medium text-grafite-500">{{ titulo }}</p>
+      <p class="mt-2 text-[26px] font-semibold leading-none tracking-tight text-grafite-900">
+        {{ valor }}
+      </p>
+    </div>
+    <span
+      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+      [ngClass]="obterClassesIcone()"
+    >
+      <i [class]="icone" class="text-[17px]"></i>
+    </span>
+  </div>
+  @if (complemento) {
+    <p class="mt-3 text-[12.5px] text-grafite-500">{{ complemento }}</p>
+  }
+</article>

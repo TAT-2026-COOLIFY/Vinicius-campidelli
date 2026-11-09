@@ -1,0 +1,169 @@
+<app-header-page
+  titulo="Caixa"
+  descricao="Fechamento diário: o saldo do dia é sempre entradas menos saídas."
+>
+  @if (caixaDoDia(); as caixaAberto) {
+    <button
+      type="button"
+      class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+             font-semibold text-white transition hover:bg-marca-600"
+      (click)="confirmarFechamento(caixaAberto)"
+    >
+      <i class="fa-solid fa-lock text-[12px]"></i>
+      Fechar caixa de hoje
+    </button>
+  }
+</app-header-page>
+
+@if (caixaDoDia(); as caixaAberto) {
+  <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <app-card-dashboard
+      titulo="Caixa"
+      [valor]="'#' + caixaAberto.id"
+      icone="fa-solid fa-hashtag"
+      cor="neutro"
+      [complemento]="formatarData(caixaAberto.data) + ' · aberto'"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Entradas do dia"
+      [valor]="caixaAberto.totalEntradas | currency: 'BRL'"
+      icone="fa-solid fa-arrow-down"
+      cor="sucesso"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Saídas do dia"
+      [valor]="caixaAberto.totalSaidas | currency: 'BRL'"
+      icone="fa-solid fa-arrow-up"
+      cor="erro"
+    ></app-card-dashboard>
+
+    <app-card-dashboard
+      titulo="Saldo do dia"
+      [valor]="caixaAberto.saldo | currency: 'BRL'"
+      icone="fa-solid fa-wallet"
+      [cor]="caixaAberto.saldo >= 0 ? 'marca' : 'erro'"
+      complemento="Entradas − saídas"
+    ></app-card-dashboard>
+  </section>
+}
+
+<div class="mt-5 grid gap-4 xl:grid-cols-3">
+  <!-- Histórico de caixas -->
+  <section class="cartao overflow-hidden">
+    <div class="border-b border-borda px-5 py-4">
+      <h2 class="titulo-secao">Histórico</h2>
+      <p class="texto-apoio mt-0.5">Selecione um dia para ver as movimentações.</p>
+    </div>
+
+    <ul class="divide-y divide-borda">
+      @for (caixa of caixas(); track caixa.id) {
+        <li>
+          <button
+            type="button"
+            class="flex w-full items-center justify-between gap-3 px-5 py-3 text-left transition hover:bg-neve"
+            [ngClass]="caixaSelecionado()?.id === caixa.id ? 'bg-marca-50/60' : ''"
+            (click)="selecionarCaixa(caixa)"
+          >
+            <div>
+              <p class="text-[13.5px] font-medium text-grafite-900">
+                {{ caixa.data | date: 'dd/MM/yyyy' }}
+              </p>
+              <p class="text-[12px] text-grafite-500">
+                {{ caixa.aberto ? 'Em aberto' : 'Fechado' }} · caixa #{{ caixa.id }}
+              </p>
+            </div>
+            <span
+              class="text-[13.5px] font-semibold"
+              [ngClass]="caixa.saldo >= 0 ? 'text-emerald-600' : 'text-rose-600'"
+            >
+              {{ caixa.saldo | currency: 'BRL' }}
+            </span>
+          </button>
+        </li>
+      } @empty {
+        <li>
+          <app-estado-vazio
+            icone="fa-solid fa-wallet"
+            titulo="Nenhum caixa registrado"
+            mensagem="Os caixas são criados automaticamente conforme as movimentações acontecem."
+          ></app-estado-vazio>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <!-- Movimentações do dia selecionado -->
+  <section class="cartao overflow-hidden xl:col-span-2">
+    @if (caixaSelecionado(); as caixa) {
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-borda px-5 py-4">
+        <div>
+          <h2 class="titulo-secao">Movimentações de {{ caixa.data | date: 'dd/MM/yyyy' }}</h2>
+          <p class="texto-apoio mt-0.5">
+            Entradas {{ caixa.totalEntradas | currency: 'BRL' }} · saídas
+            {{ caixa.totalSaidas | currency: 'BRL' }}
+          </p>
+        </div>
+        @if (caixa.aberto) {
+          <button
+            type="button"
+            class="inline-flex h-9 items-center gap-2 rounded-lg border border-borda bg-white px-3
+                   text-[13.5px] font-medium text-grafite-700 transition hover:bg-neve"
+            (click)="confirmarFechamento(caixa)"
+          >
+            <i class="fa-solid fa-lock text-[12px]"></i>
+            Fechar caixa
+          </button>
+        }
+      </div>
+    }
+
+    <p-table
+      [value]="movimentacoesDoDia()"
+      [loading]="carregando()"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="min-width: 240px">Descrição</th>
+          <th style="min-width: 130px">Tipo</th>
+          <th style="min-width: 150px">Pagamento</th>
+          <th style="min-width: 130px" class="text-right">Valor</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-movimentacao>
+        <tr>
+          <td>
+            <p class="text-[13.5px] font-medium text-grafite-900">{{ movimentacao.descricao }}</p>
+            <p class="text-[12px] text-grafite-500">{{ movimentacao.categoria }}</p>
+          </td>
+          <td><app-status [status]="movimentacao.tipo" origem="movimentacao"></app-status></td>
+          <td class="text-[13.5px] text-grafite-500">
+            {{ descreverFormaPagamento(movimentacao.formaPagamento) }}
+          </td>
+          <td
+            class="text-right text-[13.5px] font-semibold"
+            [ngClass]="movimentacao.tipo === 'ENTRADA' ? 'text-emerald-600' : 'text-rose-600'"
+          >
+            {{ movimentacao.tipo === 'ENTRADA' ? '+' : '−' }}
+            {{ movimentacao.valor | currency: 'BRL' }}
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4">
+            <app-estado-vazio
+              icone="fa-solid fa-receipt"
+              titulo="Nenhuma movimentação neste dia"
+              mensagem="Conclua uma ordem de serviço ou registre um lançamento no financeiro."
+            ></app-estado-vazio>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </section>
+</div>

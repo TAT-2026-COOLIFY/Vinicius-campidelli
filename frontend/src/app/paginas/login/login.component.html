@@ -1,0 +1,71 @@
+<div class="grid min-h-screen grid-cols-2">
+  <!-- Painel de marca -->
+  <section class="relative flex flex-col justify-between bg-tinta-900 p-10 text-white">
+    <div class="flex items-center gap-2.5">
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-marca-500 text-tinta-900">
+        <i class="fa-solid fa-bolt text-[16px]"></i>
+      </span>
+      <span class="text-[16px] font-semibold tracking-tight">{{ nomeEmpresa }}</span>
+    </div>
+
+  </section>
+
+  <!-- Formulário de acesso -->
+  <section class="flex items-center justify-center bg-white px-6 py-12">
+    <div class="w-full max-w-sm animate-surgir">
+      <h2 class="text-[22px] font-semibold tracking-tight text-grafite-900">Entrar na plataforma</h2>
+      <p class="mt-1.5 text-[14px] text-grafite-500">
+        Use as credenciais fornecidas pelo administrador da oficina.
+      </p>
+
+      <form class="mt-7 space-y-4" [formGroup]="formulario" (ngSubmit)="acessar()">
+        <div>
+          <label class="rotulo-campo" for="email">E-mail</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            autocomplete="username"
+            class="h-11 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+                   focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+            [class.border-rose-400]="campoInvalido('email')"
+          />
+          @if (campoInvalido('email')) {
+            <p class="mt-1.5 text-[12.5px] text-rose-600">Informe um e-mail válido.</p>
+          }
+        </div>
+
+        <div>
+          <label class="rotulo-campo" for="senha">Senha</label>
+          <input
+            id="senha"
+            type="password"
+            formControlName="senha"
+            autocomplete="current-password"
+            class="h-11 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+                   focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+            [class.border-rose-400]="campoInvalido('senha')"
+          />
+          @if (campoInvalido('senha')) {
+            <p class="mt-1.5 text-[12.5px] text-rose-600">A senha deve ter ao menos 4 caracteres.</p>
+          }
+        </div>
+
+        <button
+          type="submit"
+          class="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-marca-500 text-[14.5px]
+                 font-semibold text-white transition hover:bg-marca-600 focus:outline-none
+                 focus-visible:ring-2 focus-visible:ring-marca-300 disabled:opacity-60"
+          [disabled]="carregando()"
+        >
+          @if (carregando()) {
+            <i class="fa-solid fa-spin fa-spinner text-[14px]"></i>
+            <span>Entrando…</span>
+          } @else {
+            <span>Entrar</span>
+          }
+        </button>
+      </form>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,21 @@
+# Node
+node_modules/
+
+# Build output
+dist/
+/frontend/.angular/
+
+# Env
+.env
+.env.local
+
+# Logs
+npm-debug.log
+yarn-error.log
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/settings.json
+.DS_Store
+Thumbs.db

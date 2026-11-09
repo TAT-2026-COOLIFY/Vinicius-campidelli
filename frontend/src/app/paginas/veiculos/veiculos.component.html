@@ -1,0 +1,240 @@
+<app-header-page
+  titulo="Veículos"
+  descricao="Frota atendida pela oficina, sempre vinculada a um cliente."
+>
+  <button
+    type="button"
+    class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+           font-semibold text-white transition hover:bg-marca-600"
+    (click)="abrirCadastro()"
+  >
+    <i class="fa-solid fa-plus text-[12px]"></i>
+    Novo veículo
+  </button>
+</app-header-page>
+
+<div class="cartao overflow-hidden">
+  <p-table
+    #tabelaVeiculos
+    [value]="veiculos()"
+    [loading]="carregando()"
+    [paginator]="veiculos().length > 10"
+    [rows]="10"
+    [globalFilterFields]="['modelo', 'marca', 'placa', 'nomeCliente']"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="caption">
+      <div class="relative w-full sm:max-w-xs">
+        <i
+          class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-grafite-400"
+        ></i>
+        <input
+          type="search"
+          (input)="filtrarTabela(tabelaVeiculos, $event)"
+          placeholder="Buscar por placa, modelo ou cliente"
+          class="h-9 w-full rounded-lg border border-borda bg-white pl-9 pr-3 text-[13.5px] outline-none
+                 transition focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+          aria-label="Buscar veículos"
+        />
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="min-width: 110px">Placa</th>
+        <th pSortableColumn="modelo" style="min-width: 200px">
+          Veículo <p-sortIcon field="modelo"></p-sortIcon>
+        </th>
+        <th style="min-width: 200px">Proprietário</th>
+        <th style="min-width: 110px">Ano</th>
+        <th style="min-width: 130px">Quilometragem</th>
+        <th style="width: 100px" class="text-right">Ações</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-veiculo>
+      <tr>
+        <td><span class="placa-veiculo">{{ veiculo.placa }}</span></td>
+        <td>
+          <p class="text-[13.5px] font-medium text-grafite-900">
+            {{ veiculo.marca }} {{ veiculo.modelo }}
+          </p>
+          <p class="text-[12px] text-grafite-500">{{ veiculo.cor || 'Cor não informada' }}</p>
+        </td>
+        <td>
+          <p class="text-[13.5px] text-grafite-900">{{ veiculo.nomeCliente }}</p>
+          <p class="text-[12px] text-grafite-500">{{ veiculo.telefoneCliente }}</p>
+        </td>
+        <td class="text-[13.5px]">{{ veiculo.ano }}</td>
+        <td class="text-[13.5px]">{{ veiculo.quilometragem | number: '1.0-0' }} km</td>
+        <td>
+          <div class="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-neve hover:text-marca-600"
+              (click)="abrirEdicao(veiculo)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+              aria-label="Editar veículo"
+            >
+              <i class="fa-solid fa-pen text-[14px]"></i>
+            </button>
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-rose-50 hover:text-rose-600"
+              (click)="confirmarExclusao(veiculo)"
+              pTooltip="Excluir"
+              tooltipPosition="top"
+              aria-label="Excluir veículo"
+            >
+              <i class="fa-solid fa-trash text-[14px]"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6">
+          <app-estado-vazio
+            icone="fa-solid fa-car"
+            titulo="Nenhum veículo cadastrado"
+            mensagem="Vincule um veículo a um cliente para abrir ordens de serviço."
+          ></app-estado-vazio>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog
+  [visible]="formularioVisivel()"
+  (visibleChange)="formularioVisivel.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: '560px' }"
+  [header]="veiculoEmEdicao() ? 'Editar veículo' : 'Novo veículo'"
+>
+  <form [formGroup]="formulario" class="grid gap-4 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="clienteId">Cliente proprietário</label>
+      <p-dropdown
+        inputId="clienteId"
+        formControlName="clienteId"
+        [options]="clientes()"
+        optionLabel="nome"
+        optionValue="id"
+        placeholder="Selecione o cliente"
+        [filter]="true"
+        filterBy="nome"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-dropdown>
+      @if (campoInvalido('clienteId')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Selecione o proprietário do veículo.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="marca">Marca</label>
+      <input
+        id="marca"
+        type="text"
+        formControlName="marca"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('marca')"
+        placeholder="Ex.: Toyota"
+      />
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="modelo">Modelo</label>
+      <input
+        id="modelo"
+        type="text"
+        formControlName="modelo"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('modelo')"
+        placeholder="Ex.: Corolla XEi"
+      />
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="placa">Placa</label>
+      <input
+        id="placa"
+        type="text"
+        formControlName="placa"
+        class="h-10 w-full rounded-lg border border-borda px-3 font-mono text-[14px] uppercase
+               outline-none transition focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('placa')"
+        placeholder="ABC-1D23"
+        maxlength="8"
+      />
+      @if (campoInvalido('placa')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Informe a placa completa.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="ano">Ano</label>
+      <input
+        id="ano"
+        type="number"
+        formControlName="ano"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('ano')"
+      />
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="cor">Cor</label>
+      <input
+        id="cor"
+        type="text"
+        formControlName="cor"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        placeholder="Ex.: Prata"
+      />
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="quilometragem">Quilometragem</label>
+      <input
+        id="quilometragem"
+        type="number"
+        formControlName="quilometragem"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('quilometragem')"
+      />
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button
+      type="button"
+      class="h-9 rounded-lg px-3.5 text-[13.5px] font-medium text-grafite-500 transition hover:bg-neve"
+      (click)="formularioVisivel.set(false)"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-4 text-[13.5px]
+             font-semibold text-white transition hover:bg-marca-600 disabled:opacity-60"
+      (click)="salvarVeiculo()"
+      [disabled]="salvando()"
+    >
+      @if (salvando()) {
+        <i class="fa-solid fa-spin fa-spinner text-[13px]"></i>
+      }
+      Salvar veículo
+    </button>
+  </ng-template>
+</p-dialog>

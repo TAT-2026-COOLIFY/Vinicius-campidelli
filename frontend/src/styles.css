@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Tokens visuais da plataforma
+   ========================================================================== */
+:root {
+  --cor-marca: #2a8cf0;
+  --cor-marca-escura: #1670cc;
+  --cor-superficie: #ffffff;
+  --cor-fundo: #f4f6f9;
+  --cor-borda: #e3e8f0;
+  --cor-texto: #0e1726;
+  --cor-texto-suave: #64748b;
+  --raio-padrao: 10px;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Barra de rolagem discreta, alinhada ao restante da interface */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rolagem-escura::-webkit-scrollbar-thumb {
+  background: #2a3644;
+}
+
+/* ==========================================================================
+   Componentes utilitarios reaproveitados nas telas
+   ========================================================================== */
+@layer components {
+  .cartao {
+    @apply bg-white border border-borda rounded-xl shadow-cartao;
+  }
+
+  .titulo-secao {
+    @apply text-[15px] font-semibold text-grafite-900;
+  }
+
+  .rotulo-campo {
+    @apply block text-[13px] font-medium text-grafite-700 mb-1.5;
+  }
+
+  .texto-apoio {
+    @apply text-[13px] text-grafite-500;
+  }
+
+  .placa-veiculo {
+    @apply font-mono text-[12px] font-semibold tracking-wider uppercase
+           bg-neve border border-borda text-grafite-700 px-2 py-0.5 rounded;
+  }
+
+  .codigo-registro {
+    @apply font-mono text-[13px] font-semibold text-grafite-900 tracking-tight;
+  }
+}
+
+/* ==========================================================================
+   Ajustes pontuais do PrimeNG para manter a identidade do projeto
+   ========================================================================== */
+.p-component {
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-color: var(--cor-borda);
+  padding: 0.75rem 1rem;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: #eef2f7;
+  font-size: 14px;
+  padding: 0.7rem 1rem;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  background: #f8fbff;
+}
+
+.p-datatable .p-paginator-bottom {
+  border: none;
+  background: transparent;
+  padding-top: 0.75rem;
+}
+
+.p-button {
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.p-inputtext,
+.p-dropdown,
+.p-multiselect,
+.p-calendar .p-inputtext,
+.p-inputnumber-input {
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.p-dialog-mask.p-component-overlay {
+  @apply bg-tinta-900/45 backdrop-blur-[2px];
+}
+
+.p-dialog {
+  @apply overflow-hidden rounded-xl shadow-elevado;
+}
+
+.p-dialog .p-dialog-header {
+  @apply border-b border-borda px-5 py-4;
+}
+
+.p-dialog .p-dialog-header .p-dialog-title {
+  @apply text-[15.5px] font-semibold tracking-tight text-grafite-900;
+}
+
+.p-dialog .p-dialog-header-icon {
+  @apply h-8 w-8 rounded-lg text-grafite-500 transition-colors hover:bg-neve hover:text-grafite-900;
+}
+
+.p-dialog .p-dialog-content {
+  @apply px-5 py-5;
+}
+
+.p-dialog .p-dialog-footer {
+  @apply flex justify-end gap-2 border-t border-borda px-5 py-4;
+}
+
+.p-dialog .p-dialog-footer button {
+  margin: 0;
+}
+
+.p-confirm-dialog-icon {
+  @apply mr-3 self-start text-[20px] text-amber-500;
+}
+
+.p-confirm-dialog-message {
+  @apply text-[13.5px] leading-relaxed text-grafite-700;
+}
+
+.p-button.p-button-danger {
+  @apply border-rose-600 bg-rose-600 hover:border-rose-700 hover:bg-rose-700;
+}
+
+.p-button.p-button-text.p-button-secondary {
+  @apply text-grafite-500 hover:bg-neve hover:text-grafite-900;
+}
+
+.p-toast .p-toast-message {
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(14, 23, 38, 0.12);
+}
+
+/* Respeita a preferencia do sistema por menos animacao */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

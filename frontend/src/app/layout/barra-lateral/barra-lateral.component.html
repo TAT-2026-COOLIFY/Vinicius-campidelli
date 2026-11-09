@@ -1,0 +1,107 @@
+<aside
+  class="rolagem-escura fixed inset-y-0 left-0 z-40 flex flex-col bg-tinta-900 text-slate-300
+         transition-[width] duration-300 ease-out"
+  [ngClass]="recolhida ? 'w-[76px]' : 'w-[248px]'"
+>
+  <!-- Marca e recolhimento -->
+  <div class="flex h-[60px] items-center gap-2 px-4">
+    <a
+      routerLink="/dashboard"
+      class="flex min-w-0 items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-marca-500 rounded"
+    >
+      @if (!recolhida) {
+        <span class="truncate text-[15px] font-semibold tracking-tight text-white">
+          {{ nomeEmpresa }}
+        </span>
+      }
+    </a>
+
+    @if (!recolhida) {
+      <button
+        type="button"
+        class="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-slate-400
+               transition hover:bg-tinta-700 hover:text-white"
+        (click)="alternarRecolhimento.emit()"
+        aria-label="Recolher menu"
+      >
+        <i class="fa-solid fa-angle-left text-[13px]"></i>
+      </button>
+    }
+  </div>
+
+  @if (recolhida) {
+    <button
+      type="button"
+      class="mx-auto mb-2 flex h-7 w-7 items-center justify-center rounded-md text-slate-400
+             transition hover:bg-tinta-700 hover:text-white"
+      (click)="alternarRecolhimento.emit()"
+      aria-label="Expandir menu"
+    >
+      <i class="fa-solid fa-angle-right text-[13px]"></i>
+    </button>
+  }
+
+  <!-- Navegação por área do negócio -->
+  <nav class="flex-1 overflow-y-auto px-3 pb-4">
+    @for (grupo of grupos; track grupo.titulo) {
+      <div class="mt-4 first:mt-1">
+        @if (!recolhida) {
+          <p class="px-2 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+            {{ grupo.titulo }}
+          </p>
+        } @else {
+          <div class="mx-2 mb-2 border-t border-tinta-600"></div>
+        }
+
+        <ul class="space-y-0.5">
+          @for (item of grupo.itens; track item.rota) {
+            <li>
+              <a
+                [routerLink]="item.rota"
+                routerLinkActive="bg-tinta-700 text-white ring-1 ring-inset ring-tinta-500"
+                class="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[14px] transition
+                       hover:bg-tinta-700 hover:text-white focus:outline-none
+                       focus-visible:ring-2 focus-visible:ring-marca-500"
+                [ngClass]="recolhida ? 'justify-center' : ''"
+                [attr.title]="recolhida ? item.rotulo : null"
+              >
+                <i [class]="item.icone" class="text-[16px] text-slate-400 group-hover:text-marca-400"></i>
+                @if (!recolhida) {
+                  <span class="truncate">{{ item.rotulo }}</span>
+                }
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </nav>
+
+  <!-- Usuário -->
+  <div class="border-t border-tinta-700 p-3">
+    <div class="flex items-center gap-2.5" [ngClass]="recolhida ? 'justify-center' : ''">
+      <span
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tinta-600
+               text-[13px] font-semibold text-marca-300"
+      >
+        {{ usuario()?.iniciais }}
+      </span>
+      @if (!recolhida) {
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-[13.5px] font-medium text-white">{{ usuario()?.nome }}</p>
+          <p class="truncate text-[12px] text-slate-500">{{ usuario()?.cargo }}</p>
+        </div>
+        <button
+          type="button"
+          class="flex h-7 w-7 items-center justify-center rounded-md text-slate-400
+                 transition hover:bg-tinta-700 hover:text-white"
+          (click)="menuPerfil.toggle($event)"
+          aria-label="Abrir menu do usuário"
+        >
+          <i class="fa-solid fa-ellipsis-vertical text-[13px]"></i>
+        </button>
+      }
+    </div>
+    <p-menu #menuPerfil [model]="menuDoUsuario" [popup]="true" appendTo="body"></p-menu>
+  </div>
+</aside>

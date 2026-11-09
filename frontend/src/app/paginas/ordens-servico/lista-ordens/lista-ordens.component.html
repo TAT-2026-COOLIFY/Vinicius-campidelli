@@ -1,0 +1,221 @@
+<app-header-page
+  titulo="Ordens de Serviço"
+  descricao="Acompanhe o que está em execução, aguardando peças ou pronto para entrega."
+>
+  <button
+    type="button"
+    class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+           font-semibold text-white transition hover:bg-marca-600"
+    (click)="abrirNovaOrdem()"
+  >
+    <i class="fa-solid fa-plus text-[12px]"></i>
+    Abrir ordem
+  </button>
+</app-header-page>
+
+<!-- Filtros por status -->
+<div class="mb-4 flex flex-wrap gap-2">
+  @for (filtro of filtros(); track filtro.rotulo) {
+    <button
+      type="button"
+      class="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-[13px] font-medium transition"
+      [class]="
+        statusSelecionado() === filtro.status
+          ? 'border-marca-500 bg-marca-500 text-white'
+          : 'border-borda bg-white text-grafite-700 hover:border-marca-300 hover:text-marca-700'
+      "
+      (click)="aplicarFiltro(filtro.status)"
+    >
+      {{ filtro.rotulo }}
+      <span
+        class="rounded-full px-1.5 text-[11.5px] font-semibold"
+        [class]="statusSelecionado() === filtro.status ? 'bg-white/20' : 'bg-neve text-grafite-500'"
+      >
+        {{ filtro.quantidade }}
+      </span>
+    </button>
+  }
+</div>
+
+<div class="cartao overflow-hidden">
+  <p-table
+    #tabelaOrdens
+    [value]="ordensFiltradas()"
+    [loading]="carregando()"
+    [paginator]="ordensFiltradas().length > 10"
+    [rows]="10"
+    [globalFilterFields]="['numero', 'nomeCliente', 'placaVeiculo', 'descricaoVeiculo']"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="caption">
+      <div class="relative w-full sm:max-w-xs">
+        <i
+          class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-grafite-400"
+        ></i>
+        <input
+          type="search"
+          (input)="filtrarTabela(tabelaOrdens, $event)"
+          placeholder="Buscar por número, cliente ou placa"
+          class="h-9 w-full rounded-lg border border-borda bg-white pl-9 pr-3 text-[13.5px] outline-none
+                 transition focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+          aria-label="Buscar ordens"
+        />
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="min-width: 150px">Ordem</th>
+        <th style="min-width: 180px">Cliente</th>
+        <th style="min-width: 200px">Veículo</th>
+        <th style="min-width: 170px">Status</th>
+        <th style="min-width: 120px" class="text-right">Total</th>
+        <th style="width: 70px" class="text-right">Ações</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-ordem>
+      <tr>
+        <td>
+          <a [routerLink]="['/ordens-servico', ordem.id]" class="codigo-registro hover:text-marca-600">
+            {{ ordem.numero }}
+          </a>
+          <p class="text-[12px] text-grafite-500">
+            Aberta em {{ ordem.dataAbertura | date: 'dd/MM/yyyy' }}
+          </p>
+        </td>
+        <td class="text-[13.5px]">{{ ordem.nomeCliente }}</td>
+        <td>
+          <p class="text-[13.5px] text-grafite-900">{{ ordem.descricaoVeiculo }}</p>
+          <span class="placa-veiculo mt-1 inline-block">{{ ordem.placaVeiculo }}</span>
+        </td>
+        <td><app-status [status]="ordem.status" origem="ordem"></app-status></td>
+        <td class="text-right text-[13.5px] font-semibold">{{ ordem.valorTotal | currency: 'BRL' }}</td>
+        <td>
+          <div class="flex justify-end">
+            <a
+              [routerLink]="['/ordens-servico', ordem.id]"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-neve hover:text-marca-600"
+              pTooltip="Abrir detalhes"
+              tooltipPosition="top"
+              aria-label="Abrir detalhes da ordem"
+            >
+              <i class="fa-solid fa-arrow-right text-[14px]"></i>
+            </a>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6">
+          <app-estado-vazio
+            icone="fa-solid fa-file-pen"
+            titulo="Nenhuma ordem neste filtro"
+            mensagem="Abra uma ordem de serviço para registrar o atendimento de um veículo."
+          >
+            <button
+              type="button"
+              class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px] font-semibold text-white transition hover:bg-marca-600"
+              (click)="abrirNovaOrdem()"
+            >
+              <i class="fa-solid fa-plus text-[12px]"></i>
+              Abrir ordem
+            </button>
+          </app-estado-vazio>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Abertura de ordem -->
+<p-dialog
+  [visible]="formularioVisivel()"
+  (visibleChange)="formularioVisivel.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: '520px' }"
+  header="Abrir ordem de serviço"
+>
+  <form [formGroup]="formulario" class="grid gap-4">
+    <div>
+      <label class="rotulo-campo" for="clienteOrdem">Cliente</label>
+      <p-dropdown
+        inputId="clienteOrdem"
+        formControlName="clienteId"
+        [options]="clientes()"
+        optionLabel="nome"
+        optionValue="id"
+        placeholder="Selecione o cliente"
+        [filter]="true"
+        filterBy="nome"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-dropdown>
+      @if (campoInvalido('clienteId')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Selecione o cliente da ordem.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="veiculoOrdem">Veículo</label>
+      <p-dropdown
+        inputId="veiculoOrdem"
+        formControlName="veiculoId"
+        [options]="veiculosDoCliente()"
+        optionLabel="placa"
+        optionValue="id"
+        placeholder="Selecione o veículo do cliente"
+        styleClass="w-full"
+        appendTo="body"
+        emptyMessage="Escolha um cliente com veículo cadastrado"
+      >
+        <ng-template let-veiculo pTemplate="item">
+          <div class="flex items-center gap-2">
+            <span class="placa-veiculo">{{ veiculo.placa }}</span>
+            <span class="text-[13px]">{{ veiculo.marca }} {{ veiculo.modelo }}</span>
+          </div>
+        </ng-template>
+      </p-dropdown>
+      @if (campoInvalido('veiculoId')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Selecione o veículo que será atendido.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="observacoesOrdem">Observações da recepção</label>
+      <textarea
+        id="observacoesOrdem"
+        formControlName="observacoes"
+        rows="3"
+        class="w-full rounded-lg border border-borda px-3 py-2 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        placeholder="Relato do cliente, avarias observadas, nível de combustível…"
+      ></textarea>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button
+      type="button"
+      class="h-9 rounded-lg px-3.5 text-[13.5px] font-medium text-grafite-500 transition hover:bg-neve"
+      (click)="formularioVisivel.set(false)"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-4 text-[13.5px]
+             font-semibold text-white transition hover:bg-marca-600 disabled:opacity-60"
+      (click)="criarOrdem()"
+      [disabled]="salvando()"
+    >
+      @if (salvando()) {
+        <i class="fa-solid fa-spin fa-spinner text-[13px]"></i>
+      }
+      Abrir ordem
+    </button>
+  </ng-template>
+</p-dialog>

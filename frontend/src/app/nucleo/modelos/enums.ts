@@ -1,0 +1,39 @@
+export enum StatusOrdem {
+  ABERTA = 'ABERTA',
+  AGUARDANDO_ATENDIMENTO = 'AGUARDANDO_ATENDIMENTO',
+  EM_ANDAMENTO = 'EM_ANDAMENTO',
+  AGUARDANDO_PECAS = 'AGUARDANDO_PECAS',
+  CONCLUIDA = 'CONCLUIDA',
+  CANCELADA = 'CANCELADA',
+}
+
+export enum SituacaoAgendamento {
+  AGENDADO = 'AGENDADO',
+  AGUARDANDO_PECA = 'AGUARDANDO_PECA',
+  EM_ANDAMENTO = 'EM_ANDAMENTO',
+  CONCLUIDO = 'CONCLUIDO',
+  CANCELADO = 'CANCELADO',
+}
+
+export enum TipoMovimentacao {
+  ENTRADA = 'ENTRADA',
+  SAIDA = 'SAIDA',
+}
+
+export enum TipoItemOrdem {
+  SERVICO = 'SERVICO',
+  PECA = 'PECA',
+}
+
+export enum SituacaoServico {
+  ATIVO = 'ATIVO',
+  INATIVO = 'INATIVO',
+}
+
+export enum FormaPagamento {
+  DINHEIRO = 'DINHEIRO',
+  PIX = 'PIX',
+  CARTAO_DEBITO = 'CARTAO_DEBITO',
+  CARTAO_CREDITO = 'CARTAO_CREDITO',
+  BOLETO = 'BOLETO',
+}

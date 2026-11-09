@@ -1,0 +1,208 @@
+<app-header-page
+  titulo="Serviços"
+  descricao="Catálogo de serviços executados pela equipe, com preço e tempo padrão."
+>
+  <button
+    type="button"
+    class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-3.5 text-[13.5px]
+           font-semibold text-white transition hover:bg-marca-600"
+    (click)="abrirCadastro()"
+  >
+    <i class="fa-solid fa-plus text-[12px]"></i>
+    Novo serviço
+  </button>
+</app-header-page>
+
+<div class="cartao overflow-hidden">
+  <p-table
+    #tabelaServicos
+    [value]="servicos()"
+    [loading]="carregando()"
+    [paginator]="servicos().length > 10"
+    [rows]="10"
+    [globalFilterFields]="['descricao']"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="caption">
+      <div class="relative w-full sm:max-w-xs">
+        <i
+          class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-grafite-400"
+        ></i>
+        <input
+          type="search"
+          (input)="filtrarTabela(tabelaServicos, $event)"
+          placeholder="Buscar serviço"
+          class="h-9 w-full rounded-lg border border-borda bg-white pl-9 pr-3 text-[13.5px] outline-none
+                 transition focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+          aria-label="Buscar serviços"
+        />
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 80px">Código</th>
+        <th pSortableColumn="descricao" style="min-width: 260px">
+          Descrição <p-sortIcon field="descricao"></p-sortIcon>
+        </th>
+        <th style="min-width: 120px">Duração</th>
+        <th pSortableColumn="preco" style="min-width: 120px">
+          Preço <p-sortIcon field="preco"></p-sortIcon>
+        </th>
+        <th style="width: 110px">Situação</th>
+        <th style="width: 170px" class="text-right">Ações</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-servico>
+      <tr>
+        <td><span class="codigo-registro">#{{ servico.id }}</span></td>
+        <td class="text-[13.5px] font-medium text-grafite-900">{{ servico.descricao }}</td>
+        <td class="text-[13.5px] text-grafite-500">{{ formatarDuracao(servico.duracaoMinutos) }}</td>
+        <td class="text-[13.5px] font-semibold">{{ servico.preco | currency: 'BRL' }}</td>
+        <td><app-status [status]="servico.situacao" origem="servico"></app-status></td>
+        <td>
+          <div class="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-neve hover:text-marca-600"
+              (click)="alternarSituacao(servico)"
+              [pTooltip]="servico.situacao === SituacaoServico.ATIVO ? 'Desativar' : 'Ativar'"
+              tooltipPosition="top"
+              [attr.aria-label]="servico.situacao === SituacaoServico.ATIVO ? 'Desativar serviço' : 'Ativar serviço'"
+            >
+              <i
+                class="fa-solid text-[14px]"
+                [class.fa-toggle-on]="servico.situacao === SituacaoServico.ATIVO"
+                [class.fa-toggle-off]="servico.situacao !== SituacaoServico.ATIVO"
+              ></i>
+            </button>
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-neve hover:text-marca-600"
+              (click)="abrirEdicao(servico)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+              aria-label="Editar serviço"
+            >
+              <i class="fa-solid fa-pen text-[14px]"></i>
+            </button>
+            <button
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md text-grafite-500 transition hover:bg-rose-50 hover:text-rose-600"
+              (click)="confirmarExclusao(servico)"
+              pTooltip="Excluir"
+              tooltipPosition="top"
+              aria-label="Excluir serviço"
+            >
+              <i class="fa-solid fa-trash text-[14px]"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6">
+          <app-estado-vazio
+            icone="fa-solid fa-wrench"
+            titulo="Nenhum serviço cadastrado"
+            mensagem="Cadastre os serviços da oficina para lançá-los nas ordens."
+          ></app-estado-vazio>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog
+  [visible]="formularioVisivel()"
+  (visibleChange)="formularioVisivel.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: '540px' }"
+  [header]="servicoEmEdicao() ? 'Editar serviço' : 'Novo serviço'"
+>
+  <form [formGroup]="formulario" class="grid gap-4 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <label class="rotulo-campo" for="descricao">Descrição</label>
+      <input
+        id="descricao"
+        type="text"
+        formControlName="descricao"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('descricao')"
+        placeholder="Ex.: Troca de óleo e filtros"
+      />
+      @if (campoInvalido('descricao')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">Descreva o serviço com pelo menos 4 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="preco">Preço (R$)</label>
+      <input
+        id="preco"
+        type="number"
+        step="0.01"
+        formControlName="preco"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('preco')"
+      />
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="duracaoMinutos">Duração (minutos)</label>
+      <input
+        id="duracaoMinutos"
+        type="number"
+        step="15"
+        formControlName="duracaoMinutos"
+        class="h-10 w-full rounded-lg border border-borda px-3 text-[14px] outline-none transition
+               focus:border-marca-400 focus:ring-2 focus:ring-marca-100"
+        [class.border-rose-400]="campoInvalido('duracaoMinutos')"
+      />
+      @if (campoInvalido('duracaoMinutos')) {
+        <p class="mt-1.5 text-[12.5px] text-rose-600">A duração mínima é de 15 minutos.</p>
+      }
+    </div>
+
+    <div>
+      <label class="rotulo-campo" for="situacao">Situação</label>
+      <p-dropdown
+        inputId="situacao"
+        formControlName="situacao"
+        [options]="opcoesSituacao"
+        optionLabel="rotulo"
+        optionValue="valor"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-dropdown>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button
+      type="button"
+      class="h-9 rounded-lg px-3.5 text-[13.5px] font-medium text-grafite-500 transition hover:bg-neve"
+      (click)="formularioVisivel.set(false)"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="inline-flex h-9 items-center gap-2 rounded-lg bg-marca-500 px-4 text-[13.5px]
+             font-semibold text-white transition hover:bg-marca-600 disabled:opacity-60"
+      (click)="salvarServico()"
+      [disabled]="salvando()"
+    >
+      @if (salvando()) {
+        <i class="fa-solid fa-spin fa-spinner text-[13px]"></i>
+      }
+      Salvar serviço
+    </button>
+  </ng-template>
+</p-dialog>
