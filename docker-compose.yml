@@ -2,22 +2,23 @@ services:
   backend:
     build:
       context: ./backend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       PORT: 3000
-      FRONTEND_URL: http://localhost:4200
+      FRONTEND_URL: http://oafdzpwo8yp0jyvtm9eldq2j.187.33.201.107.sslip.io
+      DATABASE_PATH: /app/dados/banco-dados.sqlite
     volumes:
-      - banco-dados:/app/banco-dados.sqlite
+      - banco-dados:/app/dados
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       args:
-        API_URL: http://localhost:3000/api
-    ports:
-      - "4200:80"
+        API_URL: http://viniback.187.33.201.107.sslip.io/api
+    expose:
+      - "80"
     depends_on:
       - backend
     restart: unless-stopped

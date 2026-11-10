@@ -15,7 +15,7 @@ import {
 
 export const configuracaoBancoDados: TypeOrmModuleOptions = {
   type: 'better-sqlite3',
-  database: path.resolve(process.cwd(), 'banco-dados.sqlite'),
+  database: process.env.DATABASE_PATH ?? path.resolve(process.cwd(), 'banco-dados.sqlite'),
   entities: [
     Cliente,
     Veiculo,

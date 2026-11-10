@@ -8,7 +8,7 @@ RUN npm ci
 COPY . .
 
 # URL publica da API (acessada pelo navegador do usuario, nao pela rede interna do Docker)
-ARG API_URL=http://localhost:3000/api
+ARG API_URL=http://viniback.187.33.201.107.sslip.io/api
 RUN sed -i "s#urlApi: '.*'#urlApi: '${API_URL}'#" src/app/nucleo/configuracao/ambiente.ts
 
 RUN npm run build
