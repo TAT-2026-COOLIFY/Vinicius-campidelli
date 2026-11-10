@@ -6,7 +6,8 @@ async function inicializarAplicacao() {
   const aplicacao = await NestFactory.create(AppModule);
 
   aplicacao.setGlobalPrefix('api');
-  aplicacao.enableCors({ origin: ['http://localhost:4200'] });
+  const origensPermitidas = (process.env.FRONTEND_URL ?? 'http://localhost:4200').split(',');
+  aplicacao.enableCors({ origin: origensPermitidas });
   aplicacao.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
