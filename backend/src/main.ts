@@ -1,18 +1,14 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as path from 'path';
+import * as express from 'express';
 
 async function inicializarAplicacao() {
   const aplicacao = await NestFactory.create(AppModule);
 
   aplicacao.setGlobalPrefix('api');
-  const origensPermitidas = (
-    process.env.FRONTEND_URL ??
-    'http://oafdzpwo8yp0jyvtm9eldq2j.187.33.201.107.sslip.io,http://localhost:4200'
-  )
-    .split(',')
-    .map((origem) => origem.trim());
-  aplicacao.enableCors({ origin: origensPermitidas });
+  aplicacao.enableCors({ origin: (process.env.FRONTEND_URL ?? 'http://localhost:4200').split(',') });
   aplicacao.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -21,9 +17,18 @@ async function inicializarAplicacao() {
     }),
   );
 
+  const diretorioPublico = path.resolve(__dirname, '..', 'public');
+  aplicacao.use(express.static(diretorioPublico));
+  aplicacao.use((requisicao, resposta, proximo) => {
+    if (requisicao.path.startsWith('/api')) {
+      return proximo();
+    }
+    resposta.sendFile(path.join(diretorioPublico, 'index.html'));
+  });
+
   const porta = process.env.PORT ?? 3000;
   await aplicacao.listen(porta, '0.0.0.0');
-  console.log(`API do Autocenter disponivel em http://localhost:${porta}/api`);
+  console.log(`Autocenter disponivel em http://localhost:${porta}`);
 }
 
 inicializarAplicacao();
